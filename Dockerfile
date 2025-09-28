@@ -1,33 +1,20 @@
-# Use OpenJDK 17 as base image
 FROM eclipse-temurin:17-jdk-jammy
-
-# Set working directory inside the container
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first for caching
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-
-# Download dependencies (cached if pom.xml unchanged)
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
-
-# Copy source code
-COPY src ./src
-
-# Install git + maven
+# Install git + Maven for build
 RUN apt-get update && apt-get install -y git maven && rm -rf /var/lib/apt/lists/*
 
-# Build the Spring Boot app
-RUN ./mvnw clean package -DskipTests
+# Copy everything from build context (the cloned repo)
+COPY . .
 
-# Copy deploy.sh and make it executable
-RUN mkdir -p /opt/spring_apps
-COPY deploy.sh .
-RUN chmod +x deploy.sh
+# Make Maven wrapper executable if present
+RUN [ -f mvnw ] && chmod +x mvnw || true
 
-# Expose port your Spring Boot app uses
+# Build Spring Boot app
+RUN if [ -f mvnw ]; then ./mvnw clean package -DskipTests; else mvn clean package -DskipTests; fi
+
+# Expose default port
 EXPOSE 8082
 
-# Default command to run the Spring Boot app
-CMD ["java", "-jar", "target/testing-deploy-0.0.1-SNAPSHOT.jar"]
+# Run jar
+CMD JAR_FILE=$(ls target/*.jar | head -n1) && java -jar "$JAR_FILE"
