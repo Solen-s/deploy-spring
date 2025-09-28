@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "Current user: $(whoami)"
+echo "Current directory: $(pwd)"
+
 # -----------------------------
 # Usage: ./deploy.sh <git-repo-url> [port]
 # Example: ./deploy.sh https://github.com/user/my-spring-app.git 9090
