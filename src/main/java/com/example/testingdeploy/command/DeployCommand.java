@@ -21,7 +21,7 @@ public class DeployCommand {
        List<String> logs = new ArrayList<>();
         try {
             ProcessBuilder builder = new ProcessBuilder("bash", "/home/solen/deploy-spring-project/deploy-spring/deploy.sh", repoUrl, branch);
-            builder.directory(new File(System.getProperty("user.dir")));
+            builder.directory(new File("/deploy-spring-project"));
             builder.redirectErrorStream(true);
             builder.environment().put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
             Process process = builder.start();

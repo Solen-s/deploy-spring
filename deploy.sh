@@ -16,9 +16,11 @@ fi
 GIT_REPO=$1
 PORT=${2:-8080}  # Default to 8080 if not provided
 APP_NAME=$(basename "$GIT_REPO" .git)
-#DEPLOY_DIR="$HOME/spring_apps/$APP_NAME"
+DEPLOY_DIR="./spring_apps/$APP_NAME"
 
 echo "=== Starting deployment of $APP_NAME on port $PORT ==="
+
+mkdir -p "$DEPLOY_DIR"
 
 # Make sure base dir exists
 #mkdir -p "$HOME/spring_apps"
@@ -27,11 +29,11 @@ echo "=== Starting deployment of $APP_NAME on port $PORT ==="
 
 # Clean old project
 echo "[1/4] Cleaning previous deployment..."
-#sudo rm -rf "$DEPLOY_DIR"
+rm -rf "$DEPLOY_DIR"
 
 # Clone repo
 echo "[2/4] Cloning repository..."
-git clone "$GIT_REPO"  || { echo "Git clone failed"; exit 1; }
+git clone -b "$branch" "$GIT_REPO" "$DEPLOY_DIR" || { echo "Git clone failed"; exit 1; }
 
 cd "$DEPLOY_DIR" || exit 1
 
