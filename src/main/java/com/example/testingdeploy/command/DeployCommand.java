@@ -21,7 +21,7 @@ public class DeployCommand {
         try {
             // Absolute path to deploy.sh on host
             ProcessBuilder builder = new ProcessBuilder(
-                    "/usr/bin/bash",
+                    "/bin/bash",
                     "/home/solen/deploy-spring-project/deploy.sh",
                     repoUrl,
                     branch
