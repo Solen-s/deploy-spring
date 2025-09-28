@@ -6,7 +6,8 @@
 
 # --- Ensure PATH includes common bin directories ---
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
+echo "Script PATH=$PATH"
+which git || echo "git not found"
 # --- Locate Git ---
 GIT_CMD=$(which git)
 if [ -z "$GIT_CMD" ]; then
