@@ -1,23 +1,13 @@
 #!/bin/bash
-
 # deploy.sh
 # Usage: ./deploy.sh <git-repo-url> [branch]
 # Example: ./deploy.sh https://github.com/user/project.git main
 
-# --- Ensure Git, Maven, and Java are in PATH ---
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-# --- Check required commands ---
-for cmd in git java mvn; do
-  if ! command -v $cmd &> /dev/null; then
-    echo "Error: $cmd is not installed or not in PATH."
-    exit 1
-  fi
-done
+set -e
 
 # --- Input arguments ---
 GIT_REPO=$1
-BRANCH=${2:-main}  # Default branch is 'main' if not provided
+BRANCH=${2:-main}  # Default branch is 'main'
 
 if [ -z "$GIT_REPO" ]; then
   echo "Error: Git repository URL is required."
@@ -29,7 +19,7 @@ PROJECT_NAME=$(basename "$GIT_REPO" .git)
 
 # --- Clone or update repo ---
 if [ -d "$PROJECT_NAME" ]; then
-  echo "Repository $PROJECT_NAME already exists. Pulling latest changes..."
+  echo "Repository $PROJECT_NAME exists. Pulling latest changes..."
   cd "$PROJECT_NAME" || exit
   git fetch
   git checkout "$BRANCH"
@@ -40,27 +30,32 @@ else
   cd "$PROJECT_NAME" || exit
 fi
 
-
-
 # --- Build project ---
 echo "Building project with Maven..."
 if [ -f "./mvnw" ]; then
-    chmod +x ./mvnw
+  chmod +x ./mvnw
   ./mvnw clean package -DskipTests
 else
   mvn clean package -DskipTests
 fi
 
-# --- Stop existing application ---
-APP_PID=$(pgrep -f "$PROJECT_NAME")
+# --- Stop existing application safely ---
+JAR_FILE=$(ls target/*.jar | head -n 1)
+if [ -z "$JAR_FILE" ]; then
+  echo "Error: No JAR file found in target/"
+  exit 1
+fi
+
+APP_PID=$(pgrep -f "$JAR_FILE" || true)
 if [ -n "$APP_PID" ]; then
   echo "Stopping existing application (PID $APP_PID)..."
-  kill -9 "$APP_PID"
+  kill -9 $APP_PID
+  sleep 2  # allow port to free
 fi
 
 # --- Run application ---
 echo "Starting application..."
-nohup java -jar target/*.jar > app.log 2>&1 &
+nohup java -jar "$JAR_FILE" > app.log 2>&1 &
 
 echo "Deployment completed successfully!"
-echo "Logs are in $PROJECT_NAME/app.log"
+echo "Logs are in $(pwd)/app.log"
