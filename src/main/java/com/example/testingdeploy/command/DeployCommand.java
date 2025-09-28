@@ -24,8 +24,7 @@ public class DeployCommand {
                     "bash",
                     "/home/solen/deploy-spring-project/deploy.sh",
                     repoUrl,
-                    branch,
-                    port
+                    branch
             );
 
             // Run on host, current working directory
