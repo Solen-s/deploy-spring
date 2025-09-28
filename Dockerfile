@@ -23,7 +23,7 @@ COPY deploy.sh .
 RUN chmod +x deploy.sh
 
 # Expose port your Spring Boot app uses
-EXPOSE 8080
+EXPOSE 8082
 
 # Default command to run the Spring Boot app
 CMD ["java", "-jar", "target/testing-deploy-0.0.1-SNAPSHOT.jar"]
