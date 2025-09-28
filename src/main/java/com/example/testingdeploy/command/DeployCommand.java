@@ -22,7 +22,7 @@ public class DeployCommand {
             // Absolute path to deploy.sh on host
             ProcessBuilder builder = new ProcessBuilder(
                     "/bin/bash",
-                    "/app/deploy.sh",
+                    "/app",
                     repoUrl,
                     branch
             );
