@@ -4,28 +4,24 @@ echo "Current user: $(whoami)"
 echo "Current directory: $(pwd)"
 
 # -----------------------------
-# Usage: ./deploy.sh <git-repo-url> [port]
-# Example: ./deploy.sh https://github.com/user/my-spring-app.git 9090
+# Usage: ./deploy.sh <git-repo-url> [branch] [port]
+# Example: ./deploy.sh https://github.com/user/my-spring-app.git main 9090
 # -----------------------------
 
 if [ -z "$1" ]; then
-  echo "Usage: $0 <git-repo-url> [port]"
+  echo "Usage: $0 <git-repo-url> [branch] [port]"
   exit 1
 fi
 
 GIT_REPO=$1
-PORT=${2:-8080}  # Default to 8080 if not provided
+BRANCH=${2:-main}     # Default to 'main' if not provided
+PORT=${3:-8080}       # Default to 8080 if not provided
 APP_NAME=$(basename "$GIT_REPO" .git)
 DEPLOY_DIR="./spring_apps/$APP_NAME"
 
-echo "=== Starting deployment of $APP_NAME on port $PORT ==="
+echo "=== Starting deployment of $APP_NAME on branch '$BRANCH' on port $PORT ==="
 
 mkdir -p "$DEPLOY_DIR"
-
-# Make sure base dir exists
-#mkdir -p "$HOME/spring_apps"
-
-
 
 # Clean old project
 echo "[1/4] Cleaning previous deployment..."
@@ -33,7 +29,7 @@ rm -rf "$DEPLOY_DIR"
 
 # Clone repo
 echo "[2/4] Cloning repository..."
-git clone -b "$branch" "$GIT_REPO" "$DEPLOY_DIR" || { echo "Git clone failed"; exit 1; }
+git clone -b "$BRANCH" "$GIT_REPO" "$DEPLOY_DIR" || { echo "Git clone failed"; exit 1; }
 
 cd "$DEPLOY_DIR" || exit 1
 
