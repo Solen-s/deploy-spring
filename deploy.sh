@@ -1,61 +1,41 @@
 #!/bin/bash
-# deploy.sh
-# Usage: ./deploy.sh <git-repo-url> [branch]
-# Example: ./deploy.sh https://github.com/user/project.git main
 
-set -e
+# Check if git URL is provided
+if [ -z "$1" ]; then
+  echo "Usage: ./deploy_spring.sh <git-repo-url>"
+  exit 1
+fi
 
-# --- Input arguments ---
 GIT_REPO=$1
-BRANCH=${2:-main}  # Default branch is 'main'
+APP_NAME=$(basename "$GIT_REPO" .git)
+DEPLOY_DIR="/opt/spring_apps/$APP_NAME"
 
-if [ -z "$GIT_REPO" ]; then
-  echo "Error: Git repository URL is required."
-  exit 1
-fi
+echo "Cloning repository..."
+# Remove old folder if exists
+rm -rf "$DEPLOY_DIR"
+git clone "$GIT_REPO" "$DEPLOY_DIR" || { echo "Git clone failed"; exit 1; }
 
-# --- Extract project name ---
-PROJECT_NAME=$(basename "$GIT_REPO" .git)
+cd "$DEPLOY_DIR" || exit 1
 
-# --- Clone or update repo ---
-if [ -d "$PROJECT_NAME" ]; then
-  echo "Repository $PROJECT_NAME exists. Pulling latest changes..."
-  cd "$PROJECT_NAME" || exit
-  git fetch
-  git checkout "$BRANCH"
-  git pull origin "$BRANCH"
-else
-  echo "Cloning repository $GIT_REPO ..."
-  git clone -b "$BRANCH" "$GIT_REPO"
-  cd "$PROJECT_NAME" || exit
-fi
-
-# --- Build project ---
 echo "Building project with Maven..."
-if [ -f "./mvnw" ]; then
-  chmod +x ./mvnw
-  ./mvnw clean package -DskipTests
-else
-  mvn clean package -DskipTests
-fi
+# Make sure Maven is installed
+mvn clean package -DskipTests || { echo "Maven build failed"; exit 1; }
 
-# --- Stop existing application safely ---
-JAR_FILE=$(ls target/*.jar | head -n 1)
+# Find the generated jar
+JAR_FILE=$(find target -name "*.jar" | head -n 1)
 if [ -z "$JAR_FILE" ]; then
-  echo "Error: No JAR file found in target/"
+  echo "No jar file found"
   exit 1
 fi
 
-APP_PID=$(pgrep -f "$JAR_FILE" || true)
-if [ -n "$APP_PID" ]; then
-  echo "Stopping existing application (PID $APP_PID)..."
-  kill -9 $APP_PID
-  sleep 2  # allow port to free
+echo "Stopping old application (if running)..."
+# Kill old process if exists
+PID=$(pgrep -f "$JAR_FILE")
+if [ ! -z "$PID" ]; then
+  kill -9 $PID
 fi
 
-# --- Run application ---
-echo "Starting application..."
-nohup java -jar "$JAR_FILE" > app.log 2>&1 &
+echo "Starting new application..."
+nohup java -jar "$JAR_FILE" > "$DEPLOY_DIR/app.log" 2>&1 &
 
-echo "Deployment completed successfully!"
-echo "Logs are in $(pwd)/app.log"
+echo "Deployment complete. Logs at $DEPLOY_DIR/app.log"
