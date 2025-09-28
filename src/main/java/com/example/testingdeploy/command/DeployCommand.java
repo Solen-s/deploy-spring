@@ -22,6 +22,7 @@ public class DeployCommand {
         try {
             ProcessBuilder builder = new ProcessBuilder("bash", "./deploy.sh", repoUrl, branch);
             builder.directory(new File(System.getProperty("user.dir")));
+            builder.redirectErrorStream(true);
             Process process = builder.start();
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
