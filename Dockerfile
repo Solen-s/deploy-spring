@@ -11,4 +11,4 @@ COPY deploy.sh .
 RUN chmod +x deploy.sh
 
 # Spring Boot stays alive; deploy.sh is called by Spring
-CMD ["java", "-jar", "my-spring-app.jar"]
+CMD ["java", "-jar", "app.jar"]
