@@ -25,15 +25,12 @@ public class DeployCommand {
             builder.redirectErrorStream(true);
             Process process = builder.start();
 
+            // Read output in real time
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
             String line;
             while ((line = reader.readLine()) != null) {
                 logs.add(line);
-            }
-            while ((line = errorReader.readLine()) != null) {
-                logs.add("ERROR: "+line);
+                System.out.println(line); // optional: print to console in real-time
             }
 
             int exitCode = process.waitFor();

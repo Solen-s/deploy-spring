@@ -4,6 +4,17 @@
 # Usage: ./deploy.sh <git-repo-url> [branch]
 # Example: ./deploy.sh https://github.com/user/project.git main
 
+# --- Ensure Git, Maven, and Java are in PATH ---
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# --- Check required commands ---
+for cmd in git java mvn; do
+  if ! command -v $cmd &> /dev/null; then
+    echo "Error: $cmd is not installed or not in PATH."
+    exit 1
+  fi
+done
+
 # --- Input arguments ---
 GIT_REPO=$1
 BRANCH=${2:-main}  # Default branch is 'main' if not provided
