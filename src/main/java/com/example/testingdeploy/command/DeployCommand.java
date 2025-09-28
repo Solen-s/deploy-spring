@@ -22,13 +22,13 @@ public class DeployCommand {
             // Absolute path to deploy.sh on host
             ProcessBuilder builder = new ProcessBuilder(
                     "/bin/bash",
-                    "/app/deploy.sh",
+                    "/deploy-spring-project/deploy.sh",
                     repoUrl,
                     branch
             );
 
             // Run on host, current working directory
-            builder.directory(new File("/app"));
+            builder.directory(new File("/deploy-spring-project"));
             builder.redirectErrorStream(true);
             builder.environment().put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
 
