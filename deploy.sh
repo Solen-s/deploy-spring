@@ -75,7 +75,7 @@ nohup java -jar "$JAR_FILE" --server.port=$PORT > "$DEPLOY_DIR/app.log" 2>&1 &
 sleep 5   # wait a few seconds to let app start
 
 # Test if app is running
-if curl -s "http://localhost:$PORT/actuator/health" | grep -q "UP"; then
+if curl -s "http://localhost:$PORT/swagger-ui/index.html" | grep -q "UP"; then
   echo "Deployment successful! App is running on port $PORT"
 else
   echo "Deployment may have failed. Check logs at $DEPLOY_DIR/app.log"
