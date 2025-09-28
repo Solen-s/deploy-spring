@@ -20,9 +20,11 @@ echo "=== Starting deployment of $APP_NAME on port $PORT ==="
 # Make sure base dir exists
 mkdir -p "$HOME/spring_apps"
 
+
+
 # Clean old project
 echo "[1/4] Cleaning previous deployment..."
-rm -rf "$DEPLOY_DIR"
+sudo rm -rf "$DEPLOY_DIR"
 
 # Clone repo
 echo "[2/4] Cloning repository..."
