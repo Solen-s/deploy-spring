@@ -5,7 +5,7 @@
 # Example: ./deploy.sh https://github.com/user/project.git main
 
 # --- Ensure Git, Maven, and Java are in PATH ---
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+#export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # --- Check required commands ---
 for cmd in git java mvn; do
