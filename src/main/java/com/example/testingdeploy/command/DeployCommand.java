@@ -1,6 +1,5 @@
 package com.example.testingdeploy.command;
 
-
 import com.example.testingdeploy.response.DeployResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.shell.standard.ShellComponent;
@@ -17,32 +16,41 @@ import java.util.List;
 public class DeployCommand {
 
     @ShellMethod("Deploy a Spring project from Git repo")
-    public DeployResponse deploy(String repoUrl, String branch) {
-       List<String> logs = new ArrayList<>();
+    public DeployResponse deploy(String repoUrl, String branch, String port) {
+        List<String> logs = new ArrayList<>();
         try {
-            ProcessBuilder builder = new ProcessBuilder("bash", "/home/solen/deploy-spring-project/deploy-spring/deploy.sh", repoUrl, branch);
-            builder.directory(new File("/deploy-spring-project"));
+            // Absolute path to deploy.sh on host
+            ProcessBuilder builder = new ProcessBuilder(
+                    "bash",
+                    "/home/solen/deploy-spring-project/deploy.sh",
+                    repoUrl,
+                    branch,
+                    port
+            );
+
+            // Run on host, current working directory
+            builder.directory(new File("/home/solen/deploy-spring-project"));
             builder.redirectErrorStream(true);
             builder.environment().put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
+
             Process process = builder.start();
 
-            // Read output in real time
+            // Read output in real-time
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null) {
                 logs.add(line);
-                System.out.println(line); // optional: print to console in real-time
+                System.out.println(line);
             }
 
             int exitCode = process.waitFor();
-            // Determine success
-            boolean success = exitCode == 0 && logs.stream().noneMatch(l -> l.startsWith("ERROR:") || l.contains("Deployment failed"));
+            boolean success = exitCode == 0 && logs.stream().noneMatch(l -> l.contains("failed"));
+
             if (!success && !logs.contains("Deployment failed at above step.")) {
                 logs.add("Deployment failed at above step.");
             }
 
             String message = success ? "Deployment succeeded!" : "Deployment failed!";
-
             return new DeployResponse(success, message, logs);
 
         } catch (Exception e) {
@@ -51,5 +59,3 @@ public class DeployCommand {
         }
     }
 }
-
-
