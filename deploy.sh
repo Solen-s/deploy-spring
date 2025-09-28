@@ -2,27 +2,23 @@
 
 # deploy.sh
 # Usage: ./deploy.sh <git-repo-url> [branch]
-# Example: ./deploy.sh https://github.com/user/project.git main
 
-# --- Ensure Git, Maven, and Java are in PATH ---
+# --- Ensure basic PATH ---
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-# --- Check required commands ---
-for cmd in git java mvn; do
-  if ! command -v $cmd &> /dev/null; then
-    echo "Error: $cmd is not installed or not in PATH."
-    exit 1
-  fi
-done
 
 # --- Input arguments ---
 GIT_REPO=$1
-BRANCH=${2:-main}  # Default branch is 'main' if not provided
+BRANCH=${2:-main}
 
 if [ -z "$GIT_REPO" ]; then
   echo "Error: Git repository URL is required."
   exit 1
 fi
+
+# --- Commands with full path ---
+GIT_CMD=/usr/bin/git
+MVN_CMD=mvn
+JAVA_CMD=java
 
 # --- Extract project name ---
 PROJECT_NAME=$(basename "$GIT_REPO" .git)
@@ -31,12 +27,12 @@ PROJECT_NAME=$(basename "$GIT_REPO" .git)
 if [ -d "$PROJECT_NAME" ]; then
   echo "Repository $PROJECT_NAME already exists. Pulling latest changes..."
   cd "$PROJECT_NAME" || exit
-  git fetch
-  git checkout "$BRANCH"
-  git pull origin "$BRANCH"
+  $GIT_CMD fetch
+  $GIT_CMD checkout "$BRANCH"
+  $GIT_CMD pull origin "$BRANCH"
 else
   echo "Cloning repository $GIT_REPO ..."
-  git clone -b "$BRANCH" "$GIT_REPO"
+  $GIT_CMD clone -b "$BRANCH" "$GIT_REPO"
   cd "$PROJECT_NAME" || exit
 fi
 
@@ -45,7 +41,7 @@ echo "Building project with Maven..."
 if [ -f "./mvnw" ]; then
   ./mvnw clean package -DskipTests
 else
-  mvn clean package -DskipTests
+  $MVN_CMD clean package -DskipTests
 fi
 
 # --- Stop existing application ---
@@ -57,7 +53,7 @@ fi
 
 # --- Run application ---
 echo "Starting application..."
-nohup java -jar target/*.jar > app.log 2>&1 &
+nohup $JAVA_CMD -jar target/*.jar > app.log 2>&1 &
 
 echo "Deployment completed successfully!"
 echo "Logs are in $PROJECT_NAME/app.log"
