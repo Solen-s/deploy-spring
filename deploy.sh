@@ -9,7 +9,7 @@ if [ -z "$1" ]; then
 fi
 
 GIT_REPO=$1
-PORT=${2:-8080}           # Optional port, default 8080
+PORT=${2:-9090}           # Optional port, default 8080
 APP_NAME=$(basename "$GIT_REPO" .git)
 DEPLOY_DIR="/opt/spring_apps/$APP_NAME"
 
@@ -27,6 +27,26 @@ echo "Cloning repository from $GIT_REPO..."
 git clone "$GIT_REPO" "$DEPLOY_DIR" || { echo "Git clone failed"; exit 1; }
 
 cd "$DEPLOY_DIR" || exit 1
+
+
+# Check application.properties
+if [ -f "src/main/resources/application.properties" ]; then
+  PROP_PORT=$(grep -E "^server.port" src/main/resources/application.properties | cut -d'=' -f2 | tr -d ' ')
+  if [ ! -z "$PROP_PORT" ]; then
+    PORT=$PROP_PORT
+    echo "Detected server.port in application.properties: $PORT"
+  fi
+fi
+
+# Check application.yml
+if [ -f "src/main/resources/application.yml" ]; then
+  YML_PORT=$(grep -E "^\s*port:" src/main/resources/application.yml | head -n1 | awk '{print $2}')
+  if [ ! -z "$YML_PORT" ]; then
+    PORT=$YML_PORT
+    echo "Detected server.port in application.yml: $PORT"
+  fi
+fi
+
 
 # Build project
 echo "Building project with Maven..."
