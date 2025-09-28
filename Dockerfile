@@ -22,8 +22,8 @@ RUN apt-get update && apt-get install -y git maven && rm -rf /var/lib/apt/lists/
 RUN ./mvnw clean package -DskipTests
 
 # Copy deploy.sh and make it executable
-COPY deploy.sh .
-RUN chmod +x deploy.sh
+#COPY deploy.sh .
+#RUN chmod +x deploy.sh
 
 # Expose port your Spring Boot app uses
 EXPOSE 8082
