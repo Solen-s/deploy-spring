@@ -23,6 +23,7 @@ public class DeployCommand {
             ProcessBuilder builder = new ProcessBuilder("bash", "./deploy.sh", repoUrl, branch);
             builder.directory(new File(System.getProperty("user.dir")));
             builder.redirectErrorStream(true);
+            builder.environment().put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
             Process process = builder.start();
 
             // Read output in real time
