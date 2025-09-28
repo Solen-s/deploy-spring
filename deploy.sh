@@ -1,24 +1,11 @@
 #!/bin/bash
 
-# clone.sh
-# Usage: ./clone.sh <git-repo-url> [branch]
-# Example: ./clone.sh https://github.com/user/project.git main
-
-# --- Ensure PATH includes common bin directories ---
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-echo "Script PATH=$PATH"
-which git || echo "git not found"
-# --- Locate Git ---
-GIT_CMD=$(which git)
-if [ -z "$GIT_CMD" ]; then
-    echo "Error: git not found! Please install git."
-    exit 1
-fi
-echo "Using Git at $GIT_CMD"
+# --- Absolute path to git ---
+GIT_CMD=/usr/bin/git
 
 # --- Input arguments ---
 GIT_REPO=$1
-BRANCH=${2:-main}  # Default branch is 'main'
+BRANCH=${2:-main}
 
 if [ -z "$GIT_REPO" ]; then
     echo "Error: Git repository URL is required."
@@ -30,7 +17,7 @@ PROJECT_NAME=$(basename "$GIT_REPO" .git)
 
 # --- Clone or update repo ---
 if [ -d "$PROJECT_NAME" ]; then
-    echo "Repository '$PROJECT_NAME' already exists. Pulling latest changes..."
+    echo "Repository '$PROJECT_NAME' exists. Pulling latest changes..."
     cd "$PROJECT_NAME" || exit
     $GIT_CMD fetch
     $GIT_CMD checkout "$BRANCH"
@@ -40,4 +27,4 @@ else
     $GIT_CMD clone -b "$BRANCH" "$GIT_REPO"
 fi
 
-echo "Repository is ready at $(pwd)/$PROJECT_NAME"
+echo "Repository ready at $(pwd)/$PROJECT_NAME"
