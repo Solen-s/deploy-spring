@@ -15,6 +15,9 @@ RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
 # Copy source code
 COPY src ./src
 
+# Install git + maven
+RUN apt-get update && apt-get install -y git maven && rm -rf /var/lib/apt/lists/*
+
 # Build the Spring Boot app
 RUN ./mvnw clean package -DskipTests
 
