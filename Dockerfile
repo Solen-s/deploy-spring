@@ -1,20 +1,14 @@
-FROM eclipse-temurin:17-jdk-jammy
+# Stage 1: Build the app using Maven
+FROM maven:3.9.3-eclipse-temurin-17 AS build
 WORKDIR /app
+COPY pom.xml .
+RUN mvn dependency:go-offline
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Install git + Maven for build
-RUN apt-get update && apt-get install -y git maven && rm -rf /var/lib/apt/lists/*
-
-# Copy everything from build context (the cloned repo)
-COPY . .
-
-# Make Maven wrapper executable if present
-RUN [ -f mvnw ] && chmod +x mvnw || true
-
-# Build Spring Boot app
-RUN if [ -f mvnw ]; then ./mvnw clean package -DskipTests; else mvn clean package -DskipTests; fi
-
-# Expose default port
+# Stage 2: Run the app using JRE
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8082
-
-# Run jar
-CMD JAR_FILE=$(ls target/*.jar | head -n1) && java -jar "$JAR_FILE"
+ENTRYPOINT ["java","-jar","app.jar"]
