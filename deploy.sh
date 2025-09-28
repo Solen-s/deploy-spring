@@ -12,6 +12,12 @@ if [ -z "$GIT_REPO" ]; then
     exit 1
 fi
 
+GIT_CMD=$(which git || true)
+if [ -z "$GIT_CMD" ]; then
+    echo "Error: git not found! Install git in this environment."
+    exit 1
+fi
+
 # --- Extract project name ---
 PROJECT_NAME=$(basename "$GIT_REPO" .git)
 
