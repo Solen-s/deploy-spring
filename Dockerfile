@@ -1,32 +1,63 @@
-# Use OpenJDK 17 as base image
-FROM eclipse-temurin:17-jdk-jammy
+#!/bin/bash
 
-# Set working directory inside the container
-WORKDIR /app
+# deploy.sh
+# Usage: ./deploy.sh <git-repo-url> [branch]
+# Example: ./deploy.sh https://github.com/user/project.git main
 
-# Copy Maven wrapper and pom.xml first for caching
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
+# --- Ensure Git, Maven, and Java are in PATH ---
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# Download dependencies (cached if pom.xml unchanged)
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+# --- Check required commands ---
+for cmd in git java mvn; do
+  if ! command -v $cmd &> /dev/null; then
+    echo "Error: $cmd is not installed or not in PATH."
+    exit 1
+  fi
+done
 
-# Copy source code
-COPY src ./src
+# --- Input arguments ---
+GIT_REPO=$1
+BRANCH=${2:-main}  # Default branch is 'main' if not provided
 
-# Install git + maven
-RUN apt-get update && apt-get install -y git maven && rm -rf /var/lib/apt/lists/*
+if [ -z "$GIT_REPO" ]; then
+  echo "Error: Git repository URL is required."
+  exit 1
+fi
 
-# Build the Spring Boot app
-RUN ./mvnw clean package -DskipTests
+# --- Extract project name ---
+PROJECT_NAME=$(basename "$GIT_REPO" .git)
 
-# Copy deploy.sh and make it executable
-COPY deploy.sh .
-RUN chmod +x deploy.sh
+# --- Clone or update repo ---
+if [ -d "$PROJECT_NAME" ]; then
+  echo "Repository $PROJECT_NAME already exists. Pulling latest changes..."
+  cd "$PROJECT_NAME" || exit
+  git fetch
+  git checkout "$BRANCH"
+  git pull origin "$BRANCH"
+else
+  echo "Cloning repository $GIT_REPO ..."
+  git clone -b "$BRANCH" "$GIT_REPO"
+  cd "$PROJECT_NAME" || exit
+fi
 
-# Expose port your Spring Boot app uses
-EXPOSE 8082
+# --- Build project ---
+echo "Building project with Maven..."
+if [ -f "./mvnw" ]; then
+  ./mvnw clean package -DskipTests
+else
+  mvn clean package -DskipTests
+fi
 
-# Default command to run the Spring Boot app
-CMD ["java", "-jar", "target/testing-deploy-0.0.1-SNAPSHOT.jar"]
+# --- Stop existing application ---
+APP_PID=$(pgrep -f "$PROJECT_NAME")
+if [ -n "$APP_PID" ]; then
+  echo "Stopping existing application (PID $APP_PID)..."
+  kill -9 "$APP_PID"
+fi
+
+# --- Run application ---
+echo "Starting application..."
+nohup java -jar target/*.jar > app.log 2>&1 &
+
+echo "Deployment completed successfully!"
+echo "Logs are in $PROJECT_NAME/app.log"
