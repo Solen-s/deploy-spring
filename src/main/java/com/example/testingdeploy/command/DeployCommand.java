@@ -1,6 +1,7 @@
 package com.example.testingdeploy.command;
 
 
+import com.example.testingdeploy.response.DeployResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
@@ -8,14 +9,16 @@ import org.springframework.shell.standard.ShellMethod;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 @ShellComponent
 @RequiredArgsConstructor
 public class DeployCommand {
 
     @ShellMethod("Deploy a Spring project from Git repo")
-    public String deploy(String repoUrl, String branch) {
-        StringBuilder output = new StringBuilder();
+    public DeployResponse deploy(String repoUrl, String branch) {
+       List<String> logs = new ArrayList<>();
         try {
             ProcessBuilder builder = new ProcessBuilder("bash", "./deploy.sh", repoUrl, branch);
             builder.directory(new File(System.getProperty("user.dir")));
@@ -26,21 +29,28 @@ public class DeployCommand {
 
             String line;
             while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
+                logs.add(line);
             }
             while ((line = errorReader.readLine()) != null) {
-                output.append("ERROR: ").append(line).append("\n");
+                logs.add("ERROR: "+line);
             }
 
             int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                output.append("Deployment failed at above step.\n");
+            // Determine success
+            boolean success = exitCode == 0 && logs.stream().noneMatch(l -> l.startsWith("ERROR:") || l.contains("Deployment failed"));
+            if (!success && !logs.contains("Deployment failed at above step.")) {
+                logs.add("Deployment failed at above step.");
             }
-        } catch (Exception e) {
-            output.append("Exception: ").append(e.getMessage());
-        }
 
-        return output.toString();
+            String message = success ? "Deployment succeeded!" : "Deployment failed!";
+
+            return new DeployResponse(success, message, logs);
+
+        } catch (Exception e) {
+            logs.add("Exception: " + e.getMessage());
+            return new DeployResponse(false, "Deployment failed due to exception!", logs);
+        }
     }
 }
+
 

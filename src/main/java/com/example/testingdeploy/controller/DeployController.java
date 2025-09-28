@@ -2,6 +2,7 @@ package com.example.testingdeploy.controller;
 
 import com.example.testingdeploy.command.DeployCommand;
 import com.example.testingdeploy.enity.DeploymentRequest;
+import com.example.testingdeploy.response.DeployResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,14 +21,10 @@ public class DeployController {
 
 
     @PostMapping
-    public ResponseEntity<String> deploy(@RequestBody DeploymentRequest request) {
-        String repoUrl = request.getRepoUrl();
-        String branch = request.getBranch();
-        // use these values in your shell script
-
+    public ResponseEntity<DeployResponse> deploy(@RequestBody DeploymentRequest request) {
         // Call the deploy command (you can modify DeployCommand to accept branch too)
-        String output = deployCommands.deploy(repoUrl,branch);
+        DeployResponse response = deployCommands.deploy(request.getRepoUrl(), request.getBranch());
 
-        return ResponseEntity.ok(output);
+        return ResponseEntity.ok(response);
     }
 }
