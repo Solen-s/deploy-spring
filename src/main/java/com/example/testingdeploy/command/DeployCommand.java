@@ -16,7 +16,7 @@ import java.util.List;
 public class DeployCommand {
 
     @ShellMethod("Deploy a Spring project from Git repo")
-    public DeployResponse deploy(String repoUrl, String branch, String port) {
+    public DeployResponse deploy(String repoUrl, String branch) {
         List<String> logs = new ArrayList<>();
         try {
             // Absolute path to deploy.sh on host
