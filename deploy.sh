@@ -40,9 +40,32 @@ else
   cd "$PROJECT_NAME" || exit
 fi
 
+# --- Check if Maven is installed ---
+if ! command -v mvn &> /dev/null; then
+  echo "Maven not found. Installing Maven..."
+
+  # Detect package manager
+  if command -v apt-get &> /dev/null; then
+    sudo apt-get update -y
+    sudo apt-get install -y maven
+  elif command -v yum &> /dev/null; then
+    sudo yum install -y maven
+  elif command -v dnf &> /dev/null; then
+    sudo dnf install -y maven
+  elif command -v brew &> /dev/null; then
+    brew install maven
+  else
+    echo "Error: Package manager not found. Please install Maven manually."
+    exit 1
+  fi
+else
+  echo "Maven found: $(mvn -v)"
+fi
+
 # --- Build project ---
 echo "Building project with Maven..."
 if [ -f "./mvnw" ]; then
+    chmod +x ./mvnw
   ./mvnw clean package -DskipTests
 else
   mvn clean package -DskipTests
