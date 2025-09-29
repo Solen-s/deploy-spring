@@ -31,8 +31,9 @@ mkdir -p "$DEPLOY_DIR"
 # Clone repo
 echo "[2/4] Cloning repository..."
 git clone -b "$BRANCH" "$GIT_REPO" "$DEPLOY_DIR" || { echo "❌ Git clone failed"; exit 1; }
-
+echo "Current directory: $(pwd)"
 cd "$DEPLOY_DIR" || { echo "❌ Failed to enter $DEPLOY_DIR"; exit 1; }
+echo "Current directory: $(pwd)"
 
 # Build Docker image
 echo "[3/4] Building Docker image..."
