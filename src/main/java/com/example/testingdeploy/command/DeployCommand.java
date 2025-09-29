@@ -20,8 +20,7 @@ public class DeployCommand {
             String username,     // SSH username
             String password,     // SSH password
             String repoUrl,      // Git repo URL
-            String branch,       // Branch to deploy
-            String port          // Port for app
+            String branch      // Branch to deploy
     ) {
         List<String> logs = new ArrayList<>();
 
