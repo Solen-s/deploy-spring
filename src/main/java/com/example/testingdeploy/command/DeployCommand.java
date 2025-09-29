@@ -18,7 +18,7 @@ public class DeployCommand {
         List<String> logs = new ArrayList<>();
 
         try {
-            ProcessBuilder builder = new ProcessBuilder("bash", "./home/solen/deploy-spring-project/deploy.sh", repoUrl, branch);
+            ProcessBuilder builder = new ProcessBuilder("bash", "home/solen/deploy-spring-project/deploy.sh", repoUrl, branch);
             builder.directory(new File(System.getProperty("user.dir")));
             builder.redirectErrorStream(true); // Merge stdout and stderr
             Process process = builder.start();
