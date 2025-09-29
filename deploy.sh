@@ -35,7 +35,7 @@ cd "$DEPLOY_DIR" || { echo "❌ Failed to enter $DEPLOY_DIR"; exit 1; }
 
 # Build Docker image
 echo "[3/4] Building Docker image..."
-IMAGE_NAME="${APP_NAME}:latest"
+IMAGE_NAME="${APP_NAME}"
 docker build -t "$IMAGE_NAME" . || { echo "❌ Docker build failed"; exit 1; }
 
 # Stop & remove old container if running
