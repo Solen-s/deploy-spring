@@ -69,6 +69,9 @@ docker run -d \
   --name "$CONTAINER_NAME" \
   "$IMAGE_NAME" || { echo "❌ Failed to run container"; exit 1; }
 
+echo "docker ps"
+echo $(docker ps)
+
 echo "✅ Deployment successful!"
 echo "👉 App running at: http://$(hostname -I | awk '{print $1}'):$PORT"
 echo "💻 Swagger UI (if available): http://$(hostname -I | awk '{print $1}'):$PORT/swagger-ui/index.html"
