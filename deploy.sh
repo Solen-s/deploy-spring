@@ -17,9 +17,10 @@ GIT_REPO=$1
 BRANCH=${2:-main}     # Default branch = main
 PORT=${3:-8080}       # Default port = 8080
 APP_NAME=$(basename "$GIT_REPO" .git)
-DEPLOY_DIR="/opt/spring_apps/$APP_NAME"   # ✅ use absolute path (better for SSH)
+DEPLOY_DIR="/home/$USER/spring_apps/$APP_NAME"   # ✅ use absolute path (better for SSH)
 
 echo "=== Starting deployment of $APP_NAME on branch '$BRANCH' on port $PORT ==="
+
 
 # Clean old project
 echo "[1/4] Cleaning previous deployment..."
