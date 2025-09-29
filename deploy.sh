@@ -56,17 +56,25 @@ echo "✅ Docker image built: $IMAGE_NAME"
 # -----------------------------
 CONTAINER_NAME="${APP_NAME_LOWER}-con"
 echo "[4/4] Starting container..."
+
+# Check if port is already taken
+if lsof -i:"$PORT" -sTCP:LISTEN -t >/dev/null; then
+  echo "❌ Port $PORT is already in use. Cannot start container."
+  exit 1
+fi
+
+# Stop/remove old container if exists
 docker stop "$CONTAINER_NAME" >/dev/null 2>&1 || true
 docker rm "$CONTAINER_NAME" >/dev/null 2>&1 || true
 
 docker run -d \
   -e SERVER_PORT="$PORT" \
   -p "$PORT:$PORT" \
-  --link "$POSTGRES_CONTAINER" \
   --name "$CONTAINER_NAME" \
   "$IMAGE_NAME" || { echo "❌ Failed to run container"; exit 1; }
 
-docker ps
+echo "✅ Container started: $CONTAINER_NAME"
+docker ps --filter "name=$CONTAINER_NAME"
 
 echo "✅ Deployment successful!"
 echo "👉 App running at: http://$(hostname -I | awk '{print $1}'):$PORT"
