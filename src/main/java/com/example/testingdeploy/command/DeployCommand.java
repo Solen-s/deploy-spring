@@ -1,13 +1,12 @@
 package com.example.testingdeploy.command;
 
 import com.example.testingdeploy.response.DeployResponse;
+import com.jcraft.jsch.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,46 +14,53 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DeployCommand {
 
-    @ShellMethod("Deploy a Spring project from Git repo")
-    public DeployResponse deploy(String repoUrl, String branch) {
+    @ShellMethod("Deploy a Spring project from Git repo via SSH")
+    public DeployResponse deploy(
+            String host,         // Remote server IP
+            String username,     // SSH username
+            String password,     // SSH password
+            String repoUrl,      // Git repo URL
+            String branch,       // Branch to deploy
+            String port          // Port for app
+    ) {
         List<String> logs = new ArrayList<>();
+
         try {
-            // Absolute path to deploy.sh on host
-            ProcessBuilder builder = new ProcessBuilder(
-                    "/bin/bash",
-                    "/home/solen/deploy-spring-project/deploy-spring/deploy.sh",
-                    repoUrl,
-                    branch
-            );
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(username, host, 22);
+            session.setPassword(password);
 
-            // Run on host, current working directory
-            builder.directory(new File("/home/solen/deploy-spring-project/deploy-spring"));
-            builder.redirectErrorStream(true);
-            builder.environment().put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
+            // Avoid host key check
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();
 
-            Process process = builder.start();
+            // Command to run deploy.sh on remote server
+            String command = String.format("/home/%s/deploy-spring/deploy.sh %s %s %s", username, repoUrl, branch, port);
+
+            ChannelExec channel = (ChannelExec) session.openChannel("exec");
+            channel.setCommand(command);
+            channel.setErrStream(System.err);
+
+            InputStream in = channel.getInputStream();
+            channel.connect();
 
             // Read output in real-time
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
+            byte[] tmp = new byte[1024];
+            int read;
+            while ((read = in.read(tmp)) != -1) {
+                String line = new String(tmp, 0, read);
                 logs.add(line);
-                System.out.println(line);
+                System.out.print(line);
             }
 
-            int exitCode = process.waitFor();
-            boolean success = exitCode == 0 && logs.stream().noneMatch(l -> l.contains("failed"));
+            channel.disconnect();
+            session.disconnect();
 
-            if (!success && !logs.contains("Deployment failed at above step.")) {
-                logs.add("Deployment failed at above step.");
-            }
-
-            String message = success ? "Deployment succeeded!" : "Deployment failed!";
-            return new DeployResponse(success, message, logs);
+            return new DeployResponse(true, "Deployment command executed on remote server", logs);
 
         } catch (Exception e) {
             logs.add("Exception: " + e.getMessage());
-            return new DeployResponse(false, "Deployment failed due to exception!", logs);
+            return new DeployResponse(false, "Remote deployment failed", logs);
         }
     }
 }
