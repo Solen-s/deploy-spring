@@ -34,32 +34,51 @@ public class DeployCommand {
             session.setConfig("StrictHostKeyChecking", "no");
             session.connect();
 
-            // Command to run deploy.sh on remote server with dynamic port
+            // ✅ Correct command: deploy.sh with repo, branch, and port
             String command = String.format(
-                    "/home/solen/deploy-spring-project/deploy-spring %s %s %s",
+                    "/home/%s/deploy-spring-project/deploy-spring/deploy.sh '%s' '%s' '%s'",
                     username, repoUrl, branch, port
             );
 
             ChannelExec channel = (ChannelExec) session.openChannel("exec");
             channel.setCommand(command);
-            channel.setErrStream(System.err);
 
             InputStream in = channel.getInputStream();
+            InputStream err = channel.getErrStream(); // capture stderr too
+
             channel.connect();
 
-            // Read output in real-time
             byte[] tmp = new byte[1024];
-            int read;
-            while ((read = in.read(tmp)) != -1) {
-                String line = new String(tmp, 0, read);
-                logs.add(line);
-                System.out.print(line);
+            while (true) {
+                while (in.available() > 0) {
+                    int i = in.read(tmp, 0, 1024);
+                    if (i < 0) break;
+                    String line = new String(tmp, 0, i);
+                    logs.add(line);
+                    System.out.print(line);
+                }
+                while (err.available() > 0) {
+                    int i = err.read(tmp, 0, 1024);
+                    if (i < 0) break;
+                    String line = new String(tmp, 0, i);
+                    logs.add("[ERR] " + line);
+                    System.err.print(line);
+                }
+                if (channel.isClosed()) {
+                    if (in.available() > 0 || err.available() > 0) continue;
+                    break;
+                }
+                Thread.sleep(100);
             }
+
+            int exitStatus = channel.getExitStatus();
+            logs.add("Exit status: " + exitStatus);
 
             channel.disconnect();
             session.disconnect();
 
-            return new DeployResponse(true, "Deployment command executed on remote server", logs);
+            boolean success = exitStatus == 0;
+            return new DeployResponse(success, success ? "Deployment succeeded!" : "Deployment failed!", logs);
 
         } catch (Exception e) {
             logs.add("Exception: " + e.getMessage());
