@@ -18,6 +18,7 @@ BRANCH=${2:-main}     # Default branch = main
 PORT=${3:-8080}       # Default port = 8080
 APP_NAME=$(basename "$GIT_REPO" .git)
 DEPLOY_DIR="/home/$USER/spring_apps/$APP_NAME"   # ✅ use absolute path (better for SSH)
+APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')
 
 echo "=== Starting deployment of $APP_NAME on branch '$BRANCH' on port $PORT ==="
 
@@ -35,13 +36,13 @@ cd "$DEPLOY_DIR" || { echo "❌ Failed to enter $DEPLOY_DIR"; exit 1; }
 
 # Build Docker image
 echo "[3/4] Building Docker image..."
-IMAGE_NAME="${APP_NAME}"
+IMAGE_NAME="${$APP_NAME_LOWER}:latest"
 docker build -t "$IMAGE_NAME" . || { echo "❌ Docker build failed"; exit 1; }
 
 # Stop & remove old container if running
 echo "[4/4] Starting container..."
-docker stop "$APP_NAME" >/dev/null 2>&1 || true
-docker rm "$APP_NAME" >/dev/null 2>&1 || true
+docker stop "$IMAGE_NAME" >/dev/null 2>&1 || true
+docker rm "$IMAGE_NAMER" >/dev/null 2>&1 || true
 
 docker run -d \
   -p "$PORT":"$PORT" \
