@@ -1,11 +1,13 @@
 package com.example.testingdeploy.command;
 
 import com.example.testingdeploy.response.DeployResponse;
+import com.jcraft.jsch.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,26 +15,40 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DeployCommand {
 
-    @ShellMethod("Deploy a Spring project from Git repo")
-    public DeployResponse deploy(String repoUrl, String branch) {
+    @ShellMethod("Deploy a Spring project remotely via SSH")
+    public DeployResponse deploy(
+            String repoUrl,
+            String branch,
+            String remoteIp,
+            String username,
+            String password
+    ) {
         List<String> logs = new ArrayList<>();
+        String remoteDir = "/home/" + username + "/deploy-spring-project/deploy-spring";
 
         try {
-            ProcessBuilder builder = new ProcessBuilder("bash", "/home/solen/deploy-spring-project/deploy-spring/deploy.sh", repoUrl, branch);
-//            builder.directory(new File(System.getProperty("user.dir")));
-            builder.redirectErrorStream(true); // Merge stdout and stderr
-            Process process = builder.start();
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(username, remoteIp, 22);
+            session.setPassword(password);
+            session.setConfig("StrictHostKeyChecking", "no");
+            session.connect();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String command = "cd " + remoteDir + " && bash deploy.sh " + repoUrl + " " + branch;
+
+            ChannelExec channel = (ChannelExec) session.openChannel("exec");
+            channel.setCommand(command);
+            channel.setErrStream(System.err);
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(channel.getInputStream()));
+            channel.connect();
 
             String line;
             while ((line = reader.readLine()) != null) {
-                logs.add(line); // capture every line in order
+                logs.add(line);
             }
 
-            int exitCode = process.waitFor();
-
-            boolean success = exitCode == 0 &&
+            int exitStatus = channel.getExitStatus();
+            boolean success = exitStatus == 0 &&
                     logs.stream().noneMatch(l -> l.startsWith("ERROR:") || l.contains("Deployment failed"));
 
             if (!success && !logs.contains("Deployment failed at above step.")) {
@@ -40,6 +56,9 @@ public class DeployCommand {
             }
 
             String message = success ? "Deployment succeeded!" : "Deployment failed!";
+
+            channel.disconnect();
+            session.disconnect();
 
             return new DeployResponse(success, message, logs);
 

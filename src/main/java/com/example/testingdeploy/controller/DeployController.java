@@ -22,8 +22,11 @@ public class DeployController {
 
     @PostMapping
     public ResponseEntity<DeployResponse> deploy(@RequestBody DeploymentRequest request) {
+        String remoteIP = "128.199.129.22";
+        String username = "solen";
+        String password = "123";
         // Call the deploy command (you can modify DeployCommand to accept branch too)
-        DeployResponse response = deployCommands.deploy(request.getRepoUrl(), request.getBranch());
+        DeployResponse response = deployCommands.deploy(request.getRepoUrl(), request.getBranch(),remoteIP, username, password);
 
         return ResponseEntity.ok(response);
     }
