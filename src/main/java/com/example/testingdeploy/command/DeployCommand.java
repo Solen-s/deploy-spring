@@ -34,7 +34,7 @@ public class DeployCommand {
             session.setConfig("StrictHostKeyChecking", "no");
             session.connect();
 
-            // ✅ Correct command: deploy.sh with repo, branch, and port
+            // Correct command: deploy.sh with repo, branch, and port
             String command = String.format(
                     "/home/%s/deploy-spring-project/deploy-spring/deploy.sh '%s' '%s' '%s'",
                     username, repoUrl, branch, port
@@ -53,14 +53,14 @@ public class DeployCommand {
                 while (in.available() > 0) {
                     int i = in.read(tmp, 0, 1024);
                     if (i < 0) break;
-                    String line = new String(tmp, 0, i);
+                    String line = new String(tmp, 0, i).replaceAll("\\r|\\n", ""); // ✅ remove newlines
                     logs.add(line);
                     System.out.print(line);
                 }
                 while (err.available() > 0) {
                     int i = err.read(tmp, 0, 1024);
                     if (i < 0) break;
-                    String line = new String(tmp, 0, i);
+                    String line = new String(tmp, 0, i).replaceAll("\\r|\\n", ""); // ✅ remove newlines
                     logs.add("[ERR] " + line);
                     System.err.print(line);
                 }

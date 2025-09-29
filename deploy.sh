@@ -17,38 +17,44 @@ GIT_REPO=$1
 BRANCH=${2:-main}     # Default branch = main
 PORT=${3:-8080}       # Default port = 8080
 APP_NAME=$(basename "$GIT_REPO" .git)
-DEPLOY_DIR="/home/$USER/spring_apps/$APP_NAME"   # ✅ use absolute path (better for SSH)
-APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]_.-')
+
+# Directory for deployment
+DEPLOY_DIR="/home/$USER/spring_apps/$APP_NAME"
+
+# Docker image name: lowercase, remove invalid characters
+APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_.-]/-/g')
+
+# Ensure image name starts with a letter
+if [[ ! "$APP_NAME_LOWER" =~ ^[a-z] ]]; then
+  APP_NAME_LOWER="app-$APP_NAME_LOWER"
+fi
 
 echo "=== Starting deployment of $APP_NAME on branch '$BRANCH' on port $PORT ==="
 
-
-# Clean old project
+# ----------------------------- Clean old project -----------------------------
 echo "[1/4] Cleaning previous deployment..."
-rm -rf "$DEPLOY_DIR"
+if [ -d "$DEPLOY_DIR" ]; then
+    echo "⚠️ Removing old app directory: $DEPLOY_DIR"
+    rm -rf "$DEPLOY_DIR"
+fi
 mkdir -p "$DEPLOY_DIR"
 
-# Clone repo
+# ----------------------------- Clone repo -----------------------------
 echo "[2/4] Cloning repository..."
 git clone -b "$BRANCH" "$GIT_REPO" "$DEPLOY_DIR" || { echo "❌ Git clone failed"; exit 1; }
-echo "Current directory: $(pwd)"
 cd "$DEPLOY_DIR" || { echo "❌ Failed to enter $DEPLOY_DIR"; exit 1; }
-echo "Current directory: $(pwd)"
 
-# Build Docker image
+# ----------------------------- Build Docker image -----------------------------
 echo "[3/4] Building Docker image..."
-IMAGE_NAME="${$APP_NAME_LOWER}:latest"
+IMAGE_NAME="${APP_NAME_LOWER}:latest"
 docker build -t "$IMAGE_NAME" . || { echo "❌ Docker build failed"; exit 1; }
 
-# Stop & remove old container if running
+# ----------------------------- Stop & run container -----------------------------
 echo "[4/4] Starting container..."
-docker stop "$IMAGE_NAME" >/dev/null 2>&1 || true
-docker rm "$IMAGE_NAMER" >/dev/null 2>&1 || true
+docker stop "$APP_NAME_LOWER" >/dev/null 2>&1 || true
+docker rm "$APP_NAME_LOWER" >/dev/null 2>&1 || true
 
-docker run -d \
-  -p "$PORT":"$PORT" \
-  --name "$APP_NAME" \
-  "$IMAGE_NAME"
+docker run -d -p "$PORT:$PORT" --name "$APP_NAME_LOWER" "$IMAGE_NAME"
 
 if [ $? -eq 0 ]; then
   echo "✅ Deployment successful!"
