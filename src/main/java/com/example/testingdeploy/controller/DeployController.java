@@ -23,7 +23,7 @@ public class DeployController {
     @PostMapping
     public ResponseEntity<DeployResponse> deploy(@RequestBody DeploymentRequest request) {
         // Call the deploy command (you can modify DeployCommand to accept branch too)
-        DeployResponse response = deployCommands.deploy("128.199.129.22","solen", "123", request.getRepoUrl(), request.getBranch());
+        DeployResponse response = deployCommands.deploy("128.199.129.22","solen", "123", request.getRepoUrl(), request.getBranch(), request.getPort());
 
         return ResponseEntity.ok(response);
     }

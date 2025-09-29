@@ -14,13 +14,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DeployCommand {
 
-    @ShellMethod("Deploy a Spring project from Git repo via SSH")
+    @ShellMethod("Deploy a Spring project from Git repo via SSH with dynamic port")
     public DeployResponse deploy(
             String host,         // Remote server IP
             String username,     // SSH username
             String password,     // SSH password
             String repoUrl,      // Git repo URL
-            String branch      // Branch to deploy
+            String branch,       // Branch to deploy
+            String port          // Dynamic port for the app
     ) {
         List<String> logs = new ArrayList<>();
 
@@ -33,8 +34,11 @@ public class DeployCommand {
             session.setConfig("StrictHostKeyChecking", "no");
             session.connect();
 
-            // Command to run deploy.sh on remote server
-            String command = String.format("/home/%s/deploy-spring/deploy.sh %s %s %s", username, repoUrl, branch, port);
+            // Command to run deploy.sh on remote server with dynamic port
+            String command = String.format(
+                    "/home/solen/deploy-spring-project/deploy-spring %s %s %s",
+                    username, repoUrl, branch, port
+            );
 
             ChannelExec channel = (ChannelExec) session.openChannel("exec");
             channel.setCommand(command);
