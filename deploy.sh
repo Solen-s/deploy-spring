@@ -18,7 +18,7 @@ BRANCH=${2:-main}     # Default branch = main
 PORT=${3:-8080}       # Default port = 8080
 APP_NAME=$(basename "$GIT_REPO" .git)
 DEPLOY_DIR="/home/$USER/spring_apps/$APP_NAME"   # ✅ use absolute path (better for SSH)
-APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')
+APP_NAME_LOWER=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]_.-')
 
 echo "=== Starting deployment of $APP_NAME on branch '$BRANCH' on port $PORT ==="
 
