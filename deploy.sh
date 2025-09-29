@@ -24,34 +24,6 @@ fi
 
 echo "=== Deploying $APP_NAME on branch '$BRANCH' to port $PORT ==="
 
-# -----------------------------
-# 1️⃣ Prepare Postgres container
-# -----------------------------
-POSTGRES_CONTAINER="spring-postgres"
-POSTGRES_IMAGE="postgres:15"
-POSTGRES_DB="spring_security_db"
-POSTGRES_USER="postgres"
-POSTGRES_PASSWORD="Solen@123"
-POSTGRES_PORT=5432
-
-# Check if Postgres container exists
-if ! docker ps -a --format '{{.Names}}' | grep -q "^${POSTGRES_CONTAINER}$"; then
-    echo "⚡ Creating Postgres container..."
-    docker run -d \
-      --name "$POSTGRES_CONTAINER" \
-      -e POSTGRES_DB="$POSTGRES_DB" \
-      -e POSTGRES_USER="$POSTGRES_USER" \
-      -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-      -p "$POSTGRES_PORT:$POSTGRES_PORT" \
-      "$POSTGRES_IMAGE" || { echo "❌ Failed to start Postgres"; exit 1; }
-else
-    echo "⚡ Postgres container already exists. Starting it..."
-    docker start "$POSTGRES_CONTAINER"
-fi
-
-# Wait a few seconds for Postgres to be ready
-echo "⏳ Waiting for Postgres to initialize..."
-sleep 10
 
 # -----------------------------
 # 2️⃣ Clean previous deployment
@@ -89,9 +61,6 @@ docker rm "$CONTAINER_NAME" >/dev/null 2>&1 || true
 
 docker run -d \
   -e SERVER_PORT="$PORT" \
-  -e SPRING_DATASOURCE_URL="jdbc:postgresql://$POSTGRES_CONTAINER:$POSTGRES_PORT/$POSTGRES_DB" \
-  -e SPRING_DATASOURCE_USERNAME="$POSTGRES_USER" \
-  -e SPRING_DATASOURCE_PASSWORD="$POSTGRES_PASSWORD" \
   -p "$PORT:$PORT" \
   --link "$POSTGRES_CONTAINER" \
   --name "$CONTAINER_NAME" \

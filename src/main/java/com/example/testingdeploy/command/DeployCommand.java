@@ -1,12 +1,11 @@
 package com.example.testingdeploy.command;
 
 import com.example.testingdeploy.response.DeployResponse;
-import com.jcraft.jsch.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 
-import java.io.InputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,75 +13,39 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DeployCommand {
 
-    @ShellMethod("Deploy a Spring project from Git repo via SSH with dynamic port")
-    public DeployResponse deploy(
-            String host,         // Remote server IP
-            String username,     // SSH username
-            String password,     // SSH password
-            String repoUrl,      // Git repo URL
-            String branch,       // Branch to deploy
-            String port          // Dynamic port for the app
-    ) {
+    @ShellMethod("Deploy a Spring project from Git repo")
+    public DeployResponse deploy(String repoUrl, String branch) {
         List<String> logs = new ArrayList<>();
 
         try {
-            JSch jsch = new JSch();
-            Session session = jsch.getSession(username, host, 22);
-            session.setPassword(password);
+            ProcessBuilder builder = new ProcessBuilder("bash", "./deploy.sh", repoUrl, branch);
+            builder.directory(new File(System.getProperty("/home/solen/deploy-spring-project")));
+            builder.redirectErrorStream(true); // Merge stdout and stderr
+            Process process = builder.start();
 
-            // Avoid host key check
-            session.setConfig("StrictHostKeyChecking", "no");
-            session.connect();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-            // Correct command: deploy.sh with repo, branch, and port
-            String command = String.format(
-                    "/home/%s/deploy-spring-project/deploy-spring/deploy.sh '%s' '%s' '%s'",
-                    username, repoUrl, branch, port
-            );
-
-            ChannelExec channel = (ChannelExec) session.openChannel("exec");
-            channel.setCommand(command);
-
-            InputStream in = channel.getInputStream();
-            InputStream err = channel.getErrStream(); // capture stderr too
-
-            channel.connect();
-
-            byte[] tmp = new byte[1024];
-            while (true) {
-                while (in.available() > 0) {
-                    int i = in.read(tmp, 0, 1024);
-                    if (i < 0) break;
-                    String line = new String(tmp, 0, i).replaceAll("\\r|\\n", ""); // ✅ remove newlines
-                    logs.add(line);
-                    System.out.print(line);
-                }
-                while (err.available() > 0) {
-                    int i = err.read(tmp, 0, 1024);
-                    if (i < 0) break;
-                    String line = new String(tmp, 0, i).replaceAll("\\r|\\n", ""); // ✅ remove newlines
-                    logs.add("[ERR] " + line);
-                    System.err.print(line);
-                }
-                if (channel.isClosed()) {
-                    if (in.available() > 0 || err.available() > 0) continue;
-                    break;
-                }
-                Thread.sleep(100);
+            String line;
+            while ((line = reader.readLine()) != null) {
+                logs.add(line); // capture every line in order
             }
 
-            int exitStatus = channel.getExitStatus();
-            logs.add("Exit status: " + exitStatus);
+            int exitCode = process.waitFor();
 
-            channel.disconnect();
-            session.disconnect();
+            boolean success = exitCode == 0 &&
+                    logs.stream().noneMatch(l -> l.startsWith("ERROR:") || l.contains("Deployment failed"));
 
-            boolean success = exitStatus == 0;
-            return new DeployResponse(success, success ? "Deployment succeeded!" : "Deployment failed!", logs);
+            if (!success && !logs.contains("Deployment failed at above step.")) {
+                logs.add("Deployment failed at above step.");
+            }
+
+            String message = success ? "Deployment succeeded!" : "Deployment failed!";
+
+            return new DeployResponse(success, message, logs);
 
         } catch (Exception e) {
             logs.add("Exception: " + e.getMessage());
-            return new DeployResponse(false, "Remote deployment failed", logs);
+            return new DeployResponse(false, "Deployment failed due to exception!", logs);
         }
     }
 }

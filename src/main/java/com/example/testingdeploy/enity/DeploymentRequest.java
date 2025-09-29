@@ -19,6 +19,6 @@ public class DeploymentRequest {
     private String repoUrl;
 
     private String branch;
-    private String port;
+//    private String port;
 
 }
